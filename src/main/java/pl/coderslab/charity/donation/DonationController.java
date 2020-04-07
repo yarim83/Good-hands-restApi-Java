@@ -2,6 +2,7 @@ package pl.coderslab.charity.donation;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j;
+import org.json.JSONObject;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,12 +37,16 @@ public class DonationController {
     }
 
     @GetMapping("/count/")
-    public int getNumberOfDonations() {
+    public Object getNumberOfDonations() {
+        JSONObject jsonObject = new JSONObject();
+
         try {
-            return donationRepository.findAll().size();
+            jsonObject.put("donationBags", donationRepository.findAll().size());
+            jsonObject.put("bagsDonated", getSumOfBags());
+            return jsonObject.toString();
         } catch (NullPointerException e) {
             log.error(e);
-            return 0;
+            return null;
         }
     }
 
@@ -52,8 +57,8 @@ public class DonationController {
     }
 
     @PostMapping("/")
-    public ResponseEntity<Donation> add(@RequestBody Donation donation, BindingResult bindingResult){
-        if(bindingResult.hasErrors() || donation == null){
+    public ResponseEntity<Donation> add(@RequestBody Donation donation, BindingResult bindingResult) {
+        if (bindingResult.hasErrors() || donation == null) {
             httpHeaders.add("errors", "can't add entity");
             log.error("can't add entity" + donation);
             return new ResponseEntity<Donation>(httpHeaders, HttpStatus.BAD_REQUEST);
@@ -65,13 +70,24 @@ public class DonationController {
     @PutMapping("/{id}")
     public ResponseEntity<Donation> update(@RequestBody Donation donation, BindingResult bindingResult) {
         if (!donationRepository.findById(donation.getId()).isPresent() ||
-                bindingResult.hasErrors()){
+                bindingResult.hasErrors()) {
             httpHeaders.add("errors", "can't add entity");
             log.error("can't add entity" + donation);
             return new ResponseEntity<Donation>(httpHeaders, HttpStatus.BAD_REQUEST);
         }
         donationRepository.save(donation);
         return new ResponseEntity<Donation>(donation, HttpStatus.CREATED);
+    }
+
+
+
+    private Integer getSumOfBags() {
+        Integer totalBagsDonated = 0;
+        List<Donation> all = donationRepository.findAll();
+        for(Donation donation: all){
+            totalBagsDonated = totalBagsDonated + donation.getQuantity();
+        }
+        return totalBagsDonated;
     }
 
 
