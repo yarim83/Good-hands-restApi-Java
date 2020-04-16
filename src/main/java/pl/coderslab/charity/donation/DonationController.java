@@ -8,9 +8,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import pl.coderslab.charity.converter.DonationConverter;
+import pl.coderslab.charity.dto.DonationDto;
 import pl.coderslab.charity.model.Donation;
 
-import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -22,6 +23,7 @@ import java.util.Optional;
 public class DonationController {
 
     private final DonationRepository donationRepository;
+    private final DonationConverter donationConverter;
 
     private HttpHeaders httpHeaders;
 
@@ -51,45 +53,57 @@ public class DonationController {
     }
 
     @GetMapping("/{id}")
-    public Donation getById(@PathVariable Long id) {
-        Optional<Donation> donationOptional = donationRepository.findById(id);
-        return donationOptional.orElse(null);
+    public ResponseEntity<DonationDto> getById(@PathVariable Long id) {
+        try {
+            Optional<Donation> donationOptional = donationRepository.findById(id);
+            if (!donationOptional.isPresent()) {
+                httpHeaders.add("errors", "can't find entity");
+                log.error("can't find entity with ID:" + id);
+                return new ResponseEntity<>(httpHeaders, HttpStatus.BAD_REQUEST);
+            } else {
+                DonationDto donationDto = donationOptional.map(donationConverter::toDto).orElse(null);
+                return new ResponseEntity<>(donationDto, HttpStatus.OK);
+            }
+        } catch (NullPointerException ex) {
+            return new ResponseEntity<>(httpHeaders, HttpStatus.SERVICE_UNAVAILABLE);
+        }
+
     }
 
     @PostMapping("/")
-    public ResponseEntity<Donation> add(@RequestBody Donation donation, BindingResult bindingResult) {
-        if (bindingResult.hasErrors() || donation == null) {
+    public ResponseEntity<DonationDto> add(@RequestBody DonationDto donationDto) {
+        if (donationDto == null) {
             httpHeaders.add("errors", "can't add entity");
-            log.error("can't add entity" + donation);
-            return new ResponseEntity<Donation>(httpHeaders, HttpStatus.BAD_REQUEST);
+            log.error("can't add entity" + null);
+            return new ResponseEntity<>(httpHeaders, HttpStatus.BAD_REQUEST);
+        } else {
+            new Donation();
+            Donation donation;
+            System.out.println(donationDto.toString());
+            donation = donationConverter.fromDto(donationDto);
+            donationRepository.save(donation);
+            return new ResponseEntity<>(donationDto, HttpStatus.CREATED);
         }
-        donationRepository.save(donation);
-        return new ResponseEntity<Donation>(donation, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Donation> update(@RequestBody Donation donation, BindingResult bindingResult) {
-        if (!donationRepository.findById(donation.getId()).isPresent() ||
-                bindingResult.hasErrors()) {
+    public ResponseEntity<Donation> update(@RequestBody Donation donation) {
+        if (!donationRepository.findById(donation.getId()).isPresent()) {
             httpHeaders.add("errors", "can't add entity");
             log.error("can't add entity" + donation);
             return new ResponseEntity<Donation>(httpHeaders, HttpStatus.BAD_REQUEST);
         }
         donationRepository.save(donation);
-        return new ResponseEntity<Donation>(donation, HttpStatus.CREATED);
+        return new ResponseEntity<>(donation, HttpStatus.CREATED);
     }
-
-
 
     private Integer getSumOfBags() {
         Integer totalBagsDonated = 0;
         List<Donation> all = donationRepository.findAll();
-        for(Donation donation: all){
+        for (Donation donation : all) {
             totalBagsDonated = totalBagsDonated + donation.getQuantity();
         }
         return totalBagsDonated;
     }
-
-
 }
 

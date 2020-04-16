@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import pl.coderslab.charity.converter.CategoryConverter;
+import pl.coderslab.charity.dto.CategoryDto;
 import pl.coderslab.charity.model.Category;
 
 import java.util.ArrayList;
@@ -20,7 +22,7 @@ import java.util.Optional;
 public class CategoryController {
 
     private final CategoryRepository categoryRepository;
-
+    private final CategoryConverter categoryConverter;
     private HttpHeaders httpHeaders;
 
     @GetMapping("/")
@@ -45,9 +47,9 @@ public class CategoryController {
     }
 
     @GetMapping("/{id}")
-    public Category getById(@PathVariable Long id) {
-        Optional<Category> CategoryOptional = categoryRepository.findById(id);
-        return CategoryOptional.orElse(null);
+    public CategoryDto getById(@PathVariable Long id) {
+        Optional<Category> categoryOptional = categoryRepository.findById(id);
+        return categoryOptional.map(categoryConverter::toDto).orElse(null);
     }
 
     @PostMapping("/")

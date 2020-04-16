@@ -1,14 +1,17 @@
 package pl.coderslab.charity.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Data
@@ -28,14 +31,15 @@ public class Donation extends AbstractEntity {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate pickUpDate;
 
-    @JsonFormat(pattern = "HH:MM:ss")
+    @JsonFormat(pattern = "HH:mm:ss")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.TIME)
     private LocalTime pickUpTime;
 
     private String pickUpComment;
 
-    @OneToOne(fetch = FetchType.EAGER, cascade = {CascadeType.REFRESH, CascadeType.MERGE})
+    @OneToMany(fetch = FetchType.EAGER, cascade = {CascadeType.REFRESH, CascadeType.MERGE})
     @JoinColumn(name = "category_id")
-    private Category category;
+    private List<Category> category = new ArrayList<>();
 
     @OneToOne(fetch = FetchType.EAGER, cascade = {CascadeType.REFRESH, CascadeType.MERGE})
     @JoinColumn(name = "institution_id")
